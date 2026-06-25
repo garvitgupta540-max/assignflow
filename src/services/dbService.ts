@@ -288,8 +288,10 @@ export async function submitAssignment(submission: Omit<Submission, 'id' | 'subm
   const dueDate = new Date(assignment.dueDate);
   const status = now > dueDate ? 'late' : 'submitted';
 
+  const { id, ...cleanSubmission } = submission;
+
   const payload = {
-    ...submission,
+    ...cleanSubmission,
     submittedAt: now.toISOString(),
     status,
   };
