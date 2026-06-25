@@ -265,7 +265,7 @@ export async function uploadSubmissionFile(assignmentId: string, studentId: stri
   return { url, path: filePath };
 }
 
-export async function submitAssignment(submission: Omit<Submission, 'id' | 'submittedAt' | 'status'>): Promise<string> {
+export async function submitAssignment(submission: Omit<Submission, 'id' | 'submittedAt' | 'status'> & { id?: string }): Promise<string> {
   const assignmentDoc = await getDoc(doc(db, 'assignments', submission.assignmentId));
   const assignment = assignmentDoc.data() as Assignment;
   
@@ -279,27 +279,54 @@ export async function submitAssignment(submission: Omit<Submission, 'id' | 'subm
     status,
   };
 
-  const docRef = await addDoc(collection(db, 'submissions'), payload);
+  let docId = '';
+  let isNew = true;
 
-  // Increment submissionCount in assignment
-  await updateDoc(doc(db, 'assignments', submission.assignmentId), {
-    submissionCount: (assignment.submissionCount || 0) + 1
-  });
+  if (submission.id) {
+    const docRef = doc(db, 'submissions', submission.id);
+    await setDoc(docRef, payload, { merge: true });
+    docId = submission.id;
+    isNew = false;
+  } else {
+    // Check if one already exists in Firestore by this student for this assignment to avoid duplicates
+    const q = query(
+      collection(db, 'submissions'),
+      where('assignmentId', '==', submission.assignmentId),
+      where('studentId', '==', submission.studentId)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const existingDoc = snap.docs[0];
+      await setDoc(existingDoc.ref, payload, { merge: true });
+      docId = existingDoc.id;
+      isNew = false;
+    } else {
+      const docRef = await addDoc(collection(db, 'submissions'), payload);
+      docId = docRef.id;
+    }
+  }
+
+  if (isNew) {
+    // Increment submissionCount in assignment only for new submissions
+    await updateDoc(doc(db, 'assignments', submission.assignmentId), {
+      submissionCount: (assignment.submissionCount || 0) + 1
+    });
+  }
 
   // Notify Teacher
   const notifRef = doc(collection(db, 'notifications'));
   await setDoc(notifRef, {
     id: notifRef.id,
     userId: assignment.teacherId,
-    title: 'New submission received',
-    message: `${submission.studentName} submitted ${submission.fileName} for ${assignment.title}`,
+    title: isNew ? 'New submission received' : 'Submission updated',
+    message: `${submission.studentName} ${isNew ? 'submitted' : 'updated'} ${submission.fileName} for ${assignment.title}`,
     type: 'assignment',
     read: false,
     createdAt: new Date().toISOString(),
     link: `/teacher/assignments/${submission.assignmentId}`,
   });
 
-  return docRef.id;
+  return docId;
 }
 
 export async function evaluateSubmission(id: string, marks: number, feedback: string, teacherName: string): Promise<void> {

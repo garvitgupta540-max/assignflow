@@ -63,6 +63,7 @@ export function AssignmentDetail() {
       
       // 2. Submit assignment metadata to Firestore
       await submitAssignment({
+        id: existingSubmission?.id,
         assignmentId: assignment.id,
         assignmentTitle: assignment.title,
         studentId: user.id,
@@ -233,6 +234,21 @@ export function AssignmentDetail() {
                   )}
                 </motion.div>
               )}
+
+              {existingSubmission.status !== 'evaluated' && assignment.status === 'active' && (
+                <div className="mt-4">
+                  <Button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setShowSubmitModal(true);
+                    }}
+                    className="w-full justify-center"
+                    leftIcon={<Upload size={16} />}
+                  >
+                    Resubmit / Replace File
+                  </Button>
+                </div>
+              )}
             </motion.div>
           ) : submitted ? (
             <motion.div
@@ -259,7 +275,10 @@ export function AssignmentDetail() {
                 Upload your assignment as a PDF file. Make sure it's complete before submitting.
               </p>
               <Button
-                onClick={() => setShowSubmitModal(true)}
+                onClick={() => {
+                  setSelectedFile(null);
+                  setShowSubmitModal(true);
+                }}
                 className="w-full justify-center"
                 size="lg"
                 leftIcon={<Upload size={18} />}
