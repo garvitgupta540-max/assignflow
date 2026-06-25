@@ -1,8 +1,7 @@
 import { 
   collection, doc, setDoc, getDoc, getDocs, query, where, addDoc, updateDoc, writeBatch 
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
+import { db } from '../config/firebase';
 import { mockAssignments, mockStudents, mockTeachers, mockNotifications, mockColleges } from '../data/mockData';
 import type { Assignment, Submission, Student, Notification, College, User, CommunityMessage } from '../types';
 
@@ -255,26 +254,37 @@ export async function getSubmissionDetail(id: string): Promise<Submission | null
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Submission) : null;
 }
 
-// Browser PDF Upload to Firebase Storage with a timeout fallback
+// Browser PDF Upload to Supabase Storage
 export async function uploadSubmissionFile(assignmentId: string, studentId: string, file: File): Promise<{ url: string; path: string }> {
   const fileExtension = file.name.split('.').pop();
   const filePath = `submissions/${assignmentId}/${studentId}_${Date.now()}.${fileExtension}`;
-  const storageRef = ref(storage, filePath);
   
+  const supabaseUrl = 'https://jhdrztgniogwndniqjzh.supabase.co';
+  const supabaseKey = 'sb_publishable_8ILk90WG3ftiW1qPetw-FA_xguiUYAf';
+  const bucketName = 'hhhh';
+
+  const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucketName}/${filePath}`;
+
   try {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Firebase Storage upload timed out')), 1500);
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'apikey': supabaseKey,
+        'Content-Type': file.type || 'application/pdf',
+      },
+      body: file,
     });
 
-    await Promise.race([
-      uploadBytes(storageRef, file),
-      timeoutPromise
-    ]);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Supabase Storage upload failed: ${response.statusText}. ${errorText}`);
+    }
 
-    const url = await getDownloadURL(storageRef);
-    return { url, path: filePath };
+    const downloadUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filePath}`;
+    return { url: downloadUrl, path: filePath };
   } catch (error) {
-    console.warn('Firebase Storage upload failed or timed out. Falling back to mock URL:', error);
+    console.error('Supabase Storage upload failed. Falling back to mock URL:', error);
     const mockUrl = 'https://arxiv.org/pdf/quant-ph/0201082.pdf';
     return { url: mockUrl, path: filePath };
   }
