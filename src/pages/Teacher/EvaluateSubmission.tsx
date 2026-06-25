@@ -155,9 +155,19 @@ export function EvaluateSubmission() {
             <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 flex items-center justify-between shadow-card">
               <div className="flex items-center gap-2">
                 <FileText size={18} className="text-indigo-600" />
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[200px] md:max-w-xs">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[150px] md:max-w-xs">
                   {submission.fileName}
                 </span>
+                {submission.fileUrl && (
+                  <a
+                    href={submission.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border border-indigo-100 dark:border-indigo-900/30"
+                  >
+                    Open PDF ↗
+                  </a>
+                )}
               </div>
 
               {/* PDF Viewer Mock Utilities */}
