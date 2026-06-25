@@ -2,7 +2,7 @@ import Tesseract from 'tesseract.js';
 
 // Get Groq API Key from LocalStorage securely
 export function getGroqApiKey(): string | null {
-  return localStorage.getItem('groq_api_key') || 
+  return localStorage.getItem('groq_api_key'); 
 }
 
 // Save Groq API Key to LocalStorage
