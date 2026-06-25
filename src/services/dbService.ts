@@ -263,7 +263,7 @@ export async function uploadSubmissionFile(assignmentId: string, studentId: stri
   
   try {
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Firebase Storage upload timed out')), 5000);
+      setTimeout(() => reject(new Error('Firebase Storage upload timed out')), 1500);
     });
 
     await Promise.race([
