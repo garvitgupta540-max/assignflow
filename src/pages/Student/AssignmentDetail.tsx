@@ -79,9 +79,9 @@ export function AssignmentDetail() {
       setShowSubmitModal(false);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading/submitting assignment:', error);
-      alert('Failed to submit assignment. Please try again.');
+      alert(`Failed to submit: ${error.message || error}`);
     } finally {
       setIsSubmitting(false);
     }
